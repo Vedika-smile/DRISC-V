@@ -1,0 +1,25 @@
+RV32I Verification Status
+
+✓ ADDI
+✓ ADD
+✓ SUB
+✓ LW
+✓ SW
+✓ BEQ
+✓ AND
+□ OR
+□ XOR
+✓ SLL
+✓ SRL
+✓ SRA
+□ SLT
+□ JAL
+□ JALR
+□ BNE
+□ BLT
+□ BGE
+
+AND : 
+addi x1,x0,12     # 1100
+addi x2,x0,10     # 1010
+and  x3,x1,x2
