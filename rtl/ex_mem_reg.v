@@ -15,6 +15,10 @@ module ex_mem_reg (
     input wire        memToReg_in,
     input wire        jump_in,          // ← added
 
+    //FCAU signals
+    input wire isFcau_in,
+    input wire signed [31:0] fcau_result_in,
+
     // Outputs to MEM/WB stage
     output reg [31:0] pc_plus4_out,
     output reg [31:0] alu_result_out,
@@ -25,7 +29,10 @@ module ex_mem_reg (
     output reg        memWrite_out,
     output reg        memRead_out,
     output reg        memToReg_out,
-    output reg        jump_out          // ← added
+    output reg        jump_out ,         // ← added
+
+    output reg isFcau_out,
+    output reg signed [31:0] fcau_result_out
 );
 
     always @(posedge clk) begin
@@ -39,6 +46,8 @@ module ex_mem_reg (
             memRead_out    <= 1'b0;
             memToReg_out   <= 1'b0;
             jump_out       <= 1'b0;
+            isFcau_out  <= 1'b0;
+            fcau_result_out <= 32'sd0;
         end else begin
             pc_plus4_out   <= pc_plus4_in;
             alu_result_out <= alu_result_in;
@@ -49,6 +58,8 @@ module ex_mem_reg (
             memRead_out    <= memRead_in;
             memToReg_out   <= memToReg_in;
             jump_out       <= jump_in;
+            isFcau_out  <= isFcau_in;
+            fcau_result_out <= fcau_result_in;
         end
     end
 

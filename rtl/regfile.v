@@ -12,9 +12,14 @@ module regfile(
 	
 	reg [31:0] x [31:0];
 	
-	assign rdout1 = (rs1 == 0) ? 32'b0 : x[rs1];
-    assign rdout2 = (rs2 == 0) ? 32'b0 : x[rs2];
-	
+	// Bypass: if writing to the SAME register being read THIS cycle,
+    // forward the incoming write data directly to the read output
+    assign rdout1 = (rs1 == 0) ? 32'b0 :
+                    (w_enb && rd == rs1) ? data : x[rs1];
+
+    assign rdout2 = (rs2 == 0) ? 32'b0 :
+                    (w_enb && rd == rs2) ? data : x[rs2];
+
 	integer i;
 	always @(posedge clk, posedge reset) begin
 		if (reset) begin						// Reset

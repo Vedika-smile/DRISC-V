@@ -26,7 +26,7 @@ module imm_gen(
             // U-type: LUI, AUIPC
             // Upper 20 bits go to imm[31:12], lower 12 bits are zero
             3'b100: begin
-                imm_out = { inst[31:12], 12'b0 };
+                imm_out = { inst[31:12], 12'h000 };
             end
 
             // J-type: JAL

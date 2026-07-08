@@ -6,12 +6,9 @@ module id_ex_reg(
 
     input  wire [31:0] pc_in,
     input  wire [31:0] pc_plus4_in,
-
     input  wire [31:0] rdout1_in,
     input  wire [31:0] rdout2_in,
-
     input  wire [31:0] imm_ext_in,
-
     input  wire [4:0]  rs1_in,
     input  wire [4:0]  rs2_in,
     input  wire [4:0]  rd_in,
@@ -26,15 +23,18 @@ module id_ex_reg(
     input  wire        pcSrc_in,
     input  wire [2:0]  funct3_in,
     input  wire [3:0]  aluControl_in,
+    input wire isLui_in,
+    input wire isEvent_in,
+
+    input wire isFcau_in,
+    input wire [2:0] fcau_op_in,
+    input wire [1:0] mode_in,
 
     output reg  [31:0] pc_out,
     output reg  [31:0] pc_plus4_out,
-
     output reg  [31:0] rdout1_out,
     output reg  [31:0] rdout2_out,
-
     output reg  [31:0] imm_ext_out,
-
     output reg  [4:0]  rs1_out,
     output reg  [4:0]  rs2_out,
     output reg  [4:0]  rd_out,
@@ -48,7 +48,13 @@ module id_ex_reg(
     output reg         jump_out,
     output reg         pcSrc_out,
     output reg  [2:0]  funct3_out,
-    output reg  [3:0]  aluControl_out
+    output reg  [3:0]  aluControl_out,
+    output reg isLui_out,
+
+    output reg isEvent_out,
+    output reg isFcau_out,
+    output reg [2:0] fcau_op_out,
+    output reg [1:0] mode_out
 );
 
 always @(posedge clk) begin
@@ -71,6 +77,11 @@ always @(posedge clk) begin
         pcSrc_out      <= 1'b0;
         funct3_out     <= 3'b000;
         aluControl_out <= 4'b0000;
+        isFcau_out   <=0;
+        fcau_op_out <= 3'b000;
+        mode_out  <= 2'b00;
+        isLui_out <= 1'b0;
+        isEvent_out <= 1'b0;
     end
 
     // flush AND stall both insert a bubble into EX —
@@ -94,6 +105,11 @@ always @(posedge clk) begin
         pcSrc_out      <= 1'b0;
         funct3_out     <= 3'b000;
         aluControl_out <= 4'b0000;
+        isFcau_out   <=0;
+        fcau_op_out <= 3'b000;
+        mode_out  <= 2'b00;
+        isLui_out <=0;
+        isEvent_out <=1'b0;
     end
     else if (stall) begin
         // A stall inserts a bubble ahead, but does NOT reset data addresses.
@@ -117,6 +133,9 @@ always @(posedge clk) begin
         pcSrc_out      <= 1'b0;
         funct3_out     <= 3'b000;
         aluControl_out <= 4'b0000;
+        isFcau_out   <=0;
+        fcau_op_out <= 3'b000;
+        mode_out  <= 2'b00;
     end
 
     else begin
@@ -138,6 +157,11 @@ always @(posedge clk) begin
         pcSrc_out      <= pcSrc_in;
         funct3_out     <= funct3_in;
         aluControl_out <= aluControl_in;
+        isLui_out <= isLui_in;
+        isFcau_out   <= isFcau_in;
+        fcau_op_out <= fcau_op_in;
+        mode_out  <= mode_in;
+        isEvent_out <= isEvent_in;
     end
 end
 
