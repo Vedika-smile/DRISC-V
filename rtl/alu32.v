@@ -24,7 +24,7 @@ module alu32(
 			4'b0100: result = a ^ b;                                    // XOR / XORI
 			4'b0101: result = a << b[4:0];                              // SLL / SLLI (Shift Left Logical)
 			4'b0110: result = a >> b[4:0];                              // SRL / SRLI (Shift Right Logical)
-			4'b0111: result = $signed(a) >>> b[4:0];                             // SRA / SRAI (Shift Right Arithmetic)
+			4'b0111: result = $signed(a) >>> b[4:0];                            // SRA / SRAI (Shift Right Arithmetic)
 			//4'b1000: result = (a == b) ? 32'h1 : 32'h0;                 // BEQ / BNE helper
 			4'b1001: result = (a < b) ? 32'h1 : 32'h0;                  // SLTU / SLTIU (Less Than Unsigned)
 			4'b1010: result = (a_signed < b_signed) ? 32'h1 : 32'h0;    // SLT / SLTI (Less Than Signed)
