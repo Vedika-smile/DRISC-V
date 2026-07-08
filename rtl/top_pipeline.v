@@ -1,6 +1,7 @@
 module top_pipeline(
     input wire clk,
-    input wire reset
+    input wire reset,
+    output wire event_out
 );
 
     //================================================================
@@ -8,6 +9,12 @@ module top_pipeline(
     //================================================================
     wire [31:0] curr_pc;
     wire [31:0] instruction;
+    wire [31:0] pc_id, pc_plus4_id, rdout1_id, rdout2_id, imm_ext_id;
+    wire [4:0]  rs1_id, rs2_id, rd_id;
+    wire        regWrite_id, memWrite_id, memRead_id, aluSrc_id, branch_id, memToReg_id, jump_id, pcSrc_id, isLui_id, isFcau_id, isEvent_id;
+    wire [2:0]  funct3_id, fcau_op_id;
+    wire [3:0]  aluControl_id;
+    wire [1:0] mode_id;
 
     pc program_counter (
         .clk        (clk),
@@ -55,9 +62,10 @@ module top_pipeline(
     wire [4:0]  rs2    = inst_if[24:20];
     wire [6:0]  funct7 = inst_if[31:25];
 
-    wire        regWrite, memWrite, memRead, aluSrc, branch, memToReg, jump, pcSrc;
-    wire [2:0]  immSel;
-    wire [3:0]  aluControl;
+    wire regWrite, memWrite, memRead, aluSrc, branch, memToReg, jump, pcSrc, isFcau, isLui, isEvent;
+    wire [2:0] immSel, fcau_op;
+    wire [3:0] aluControl;
+    wire [1:0] mode;
 
     control_unit CU (
         .opcode     (opcode),
@@ -72,7 +80,12 @@ module top_pipeline(
         .jump       (jump),
         .immSel     (immSel),
         .aluControl (aluControl),
-        .pcSrc      (pcSrc)
+        .pcSrc      (pcSrc),
+        .isLui     (isLui),
+        .isFcau    (isFcau),
+        .fcau_op  (fcau_op),
+        .mode     (mode),
+        .isEvent (isEvent)
     );
 
     wire [31:0] imm_ext;
@@ -106,11 +119,6 @@ module top_pipeline(
     //================================================================
     // ID/EX REGISTER OUTPUTS — these feed the EX stage
     //================================================================
-    wire [31:0] pc_id, pc_plus4_id, rdout1_id, rdout2_id, imm_ext_id;
-    wire [4:0]  rs1_id, rs2_id, rd_id;
-    wire        regWrite_id, memWrite_id, memRead_id, aluSrc_id, branch_id, memToReg_id, jump_id, pcSrc_id;
-    wire [2:0]  funct3_id;
-    wire [3:0]  aluControl_id;
 
     id_ex_reg id_ex (
         .clk            (clk),
@@ -137,6 +145,11 @@ module top_pipeline(
         .pcSrc_in       (pcSrc),
         .funct3_in      (funct3),
         .aluControl_in  (aluControl),
+        .isLui_in (isLui),
+        .isFcau_in (isFcau),
+        .fcau_op_in (fcau_op),
+        .mode_in (mode),
+        .isEvent_in (isEvent),
 
         .pc_out         (pc_id),
         .pc_plus4_out   (pc_plus4_id),
@@ -156,13 +169,19 @@ module top_pipeline(
         .jump_out       (jump_id),
         .pcSrc_out      (pcSrc_id),
         .funct3_out     (funct3_id),
-        .aluControl_out (aluControl_id)
+        .aluControl_out (aluControl_id),
+        .isLui_out (isLui_id),
+        .isFcau_out  (isFcau_id),
+        .fcau_op_out  (fcau_op_id),
+        .mode_out    (mode_id),
+        .isEvent_out (isEvent_id)
     );
 
     //================================================================
     // EX STAGE — uses ONLY _id signals (the ID/EX register outputs)
     //================================================================
     wire [31:0] alu_a = pcSrc_id ? pc_id :
+                        isLui_id ? 32'h00000000 :
                         forwardA  ? writeBackData_wb : rdout1_id;        //checkkkk
 
     wire [31:0] alu_b = aluSrc_id ? imm_ext_id :
@@ -192,8 +211,20 @@ module top_pipeline(
 
     wire alu_less = alu_result[0];  // connected in pc
 
-    // Branch/jump target decision happens HERE in EX, using id_ex_reg outputs
-    // NOTE: pc.v will need updating to compute branch target from pc_id, not curr_pc
+    wire signed [31:0] fcau_result;
+
+    fcau FCAU (
+        .clk       (clk),
+        .reset      (reset),
+        .isFcau_id  (isFcau_id),
+        .fcau_op   (fcau_op_id),
+        .mode    (mode_id),
+        .rs1     (alu_a),    // reuse the SAME forwarded alu_a (handles hazards automatically!)
+        .rs2    (alu_b),    // reuse the SAME forwarded alu_b
+        .fcau_result (fcau_result),
+        .isEvent_id(isEvent_id),
+        .event_out(event_out)
+    );
 
     //================================================================
     // EX/MEM REGISTER OUTPUTS — these feed the MEM/WB stage
@@ -202,6 +233,9 @@ module top_pipeline(
     wire [4:0]  rd_ex;
     wire        regWrite_ex, memWrite_ex, memRead_ex, memToReg_ex, jump_ex;
     wire [31:0] rdout2_forwarded = forwardB ? writeBackData_wb : rdout2_id;
+    wire isFcau_ex;   // carried through ex_mem_reg, same pattern as memToReg_ex
+    wire signed [31:0] fcau_result_ex;   // carried through ex_mem_reg
+
 
     ex_mem_reg mem_reg (
         .clk            (clk),
@@ -218,6 +252,9 @@ module top_pipeline(
         .memToReg_in    (memToReg_id),
         .jump_in        (jump_id),
 
+        .isFcau_in (isFcau_id),
+        .fcau_result_in (fcau_result),
+
         .pc_plus4_out   (pc_plus4_ex),
         .alu_result_out (alu_result_ex),
         .write_data_out (write_data_ex),
@@ -227,7 +264,10 @@ module top_pipeline(
         .memWrite_out   (memWrite_ex),
         .memRead_out    (memRead_ex),
         .memToReg_out   (memToReg_ex),
-        .jump_out       (jump_ex)
+        .jump_out       (jump_ex),
+
+        .isFcau_out  (isFcau_ex),
+        .fcau_result_out (fcau_result_ex)
     );
 
     //================================================================
@@ -246,6 +286,7 @@ module top_pipeline(
 
     // Writeback MUX — this feeds BACK into regfile (declared earlier)
     assign writeBackData_wb = jump_ex   ? pc_plus4_ex :
+                                isFcau_ex ? fcau_result_ex :
                                memToReg_ex ? readData     :
                                              alu_result_ex;
     assign rd_wb       = rd_ex;
