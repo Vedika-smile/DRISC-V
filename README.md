@@ -101,14 +101,12 @@ CPI = 1.375. RV32I baseline assumes software `MUL` (32 cycles) + software `SQRT`
 ```
 DRISC-V/
 ├── prg/
-│   ├── Benchmarks.txt        # Benchmark notes / results log
-│   ├── Done_test.txt          # Test-tracking notes
 │   └── program.txt            # Assembled program / instruction memory image
 ├── rtl/
-│   ├── DRISC-V/                # Internal RTL subfolder
 │   ├── alu32.v                 # 32-bit ALU
 │   ├── control_unit.v          # Control unit
 │   ├── data_mem.v              # Data memory
+│   ├── datapath.v              # Top-level datapath wiring
 │   ├── ex_mem_reg.v            # EX/MEM pipeline register
 │   ├── fcau.v                  # Functional Control and Acceleration Unit (D-ISA)
 │   ├── forwarding_unit.v       # Data hazard forwarding logic
@@ -116,26 +114,18 @@ DRISC-V/
 │   ├── if_id_reg.v             # IF/ID pipeline register
 │   ├── imm_gen.v               # Immediate generator
 │   ├── inst_mem.v              # Instruction memory
-│   ├── multiplier.v            # Hardware multiplier
 │   ├── pc.v                    # Program counter
-│   ├── prev_fcau.v             # Earlier FCAU revision (kept for reference)
 │   ├── regfile.v               # Register file
-│   ├── top_pipeline.v          # Top-level 4-stage pipelined processor
-│   └── top_s.v                 # Top-level single-cycle reference processor
-├── sim/                        # Simulation scripts / outputs
-├── software/                   # RV32I software baseline (GNU toolchain)
+│   └── top_pipeline.v          # Top-level 4-stage pipelined processor
 ├── tb/
-│   ├── bench_pipeline_tb.v     # Benchmark-driven pipeline testbench
-│   ├── benchmark1.v            # Benchmark program testbench
 │   ├── fcau_tb.v               # FCAU unit testbench
-│   ├── mul_tb.v                # Multiplier testbench
 │   ├── pipeline_tb.v           # Pipeline testbench
-│   ├── single_tb.v             # Single-cycle testbench
-│   ├── tb.v                    # General testbench
-│   ├── vmag_tb.v               # VMAG accuracy/error testbench
-│   └── alpha_beta.py           # Python script to optimize VMAG alpha/beta coefficients
+│   └── single_tb.v             # Single-cycle testbench
 └── README.md
 ```
+
+> This tree reflects the current state of the repository and will grow as more benchmarks, testbenches, and simulation scripts are pushed.
+
 
 
 ---
@@ -149,7 +139,7 @@ DRISC-V/
 
 ### Simulation
 ```bash
-# Example using Icarus Verilog — pipeline testbench
+# Pipeline testbench
 iverilog -o sim_out rtl/*.v tb/pipeline_tb.v
 vvp sim_out
 
@@ -157,9 +147,9 @@ vvp sim_out
 iverilog -o fcau_out rtl/fcau.v tb/fcau_tb.v
 vvp fcau_out
 
-# VMAG accuracy testbench
-iverilog -o vmag_out rtl/fcau.v tb/vmag_tb.v
-vvp vmag_out
+# Single-cycle reference testbench
+iverilog -o single_out rtl/*.v tb/single_tb.v
+vvp single_out
 ```
 
 ### FPGA Implementation
