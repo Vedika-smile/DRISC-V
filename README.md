@@ -171,7 +171,6 @@ vvp single_out
 
 - `VDOT` is currently on the worst timing path at higher frequencies (~75 MHz) — further pipelining is a natural next step.
 - VMAG accuracy could be improved with a CORDIC-based implementation (~8 cycles) as an alternative to Alpha-Max Beta-Min.
-- No hazard-detection/stall unit beyond forwarding — corner cases involving multi-cycle FCAU instructions may need additional coverage.
 - No branch prediction, caches, or OS support — this is a bare-metal, benchmark-driven design.
 - Swarm coordination, thermal-camera integration, satellite comms, and mother-child drone (claw-based deployment) integration are proposed extensions, not implemented here.
 
@@ -183,6 +182,3 @@ vvp single_out
 Department of Electronics and Communication Engineering, MNIT Jaipur
 Developed during an internship at the VLSI Laboratory, Military College of Telecommunication Engineering (MCTE)
 
-## License
-
-Specify a license (e.g. MIT, Apache 2.0) here before publishing.
