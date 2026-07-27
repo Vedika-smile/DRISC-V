@@ -124,9 +124,6 @@ DRISC-V/
 └── README.md
 ```
 
-> This tree reflects the current state of the repository and will grow as more benchmarks, testbenches, and simulation scripts are pushed.
-
-
 
 ---
 
