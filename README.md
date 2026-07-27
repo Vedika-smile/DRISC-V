@@ -99,28 +99,44 @@ CPI = 1.375. RV32I baseline assumes software `MUL` (32 cycles) + software `SQRT`
 ## Repository Structure
 
 ```
-drisc-v/
+DRISC-V/
+├── prg/
+│   ├── Benchmarks.txt        # Benchmark notes / results log
+│   ├── Done_test.txt          # Test-tracking notes
+│   └── program.txt            # Assembled program / instruction memory image
 ├── rtl/
-│   ├── core/               # PC, register file, immediate generator, ALU, control unit
-│   ├── pipeline/           # IF/ID, ID/EX, EX/MEM pipeline registers, forwarding logic
-│   └── fcau/                # fcau.v — D-ISA execution unit
-├── isa/
-│   └── d_isa_encoding.md    # Custom opcode/funct encoding reference
-├── benchmarks/
-│   ├── asm/                 # DRISC-V assembly for all 5 benchmarks
-│   └── sw_baseline/         # Equivalent C code compiled for RV32I (GNU toolchain)
-├── sim/
-│   ├── testbenches/          # Pipeline + per-instruction testbenches (incl. VMAG)
-│   └── waveforms/
-├── fpga/
-│   ├── constraints/          # Basys-3 XDC files
-│   └── reports/              # Vivado synthesis, timing, utilization, power reports
-├── docs/
-│   └── DRISC-V_Internship_Report.docx
+│   ├── DRISC-V/                # Internal RTL subfolder
+│   ├── alu32.v                 # 32-bit ALU
+│   ├── control_unit.v          # Control unit
+│   ├── data_mem.v              # Data memory
+│   ├── ex_mem_reg.v            # EX/MEM pipeline register
+│   ├── fcau.v                  # Functional Control and Acceleration Unit (D-ISA)
+│   ├── forwarding_unit.v       # Data hazard forwarding logic
+│   ├── id_ex_reg.v             # ID/EX pipeline register
+│   ├── if_id_reg.v             # IF/ID pipeline register
+│   ├── imm_gen.v               # Immediate generator
+│   ├── inst_mem.v              # Instruction memory
+│   ├── multiplier.v            # Hardware multiplier
+│   ├── pc.v                    # Program counter
+│   ├── prev_fcau.v             # Earlier FCAU revision (kept for reference)
+│   ├── regfile.v               # Register file
+│   ├── top_pipeline.v          # Top-level 4-stage pipelined processor
+│   └── top_s.v                 # Top-level single-cycle reference processor
+├── sim/                        # Simulation scripts / outputs
+├── software/                   # RV32I software baseline (GNU toolchain)
+├── tb/
+│   ├── bench_pipeline_tb.v     # Benchmark-driven pipeline testbench
+│   ├── benchmark1.v            # Benchmark program testbench
+│   ├── fcau_tb.v               # FCAU unit testbench
+│   ├── mul_tb.v                # Multiplier testbench
+│   ├── pipeline_tb.v           # Pipeline testbench
+│   ├── single_tb.v             # Single-cycle testbench
+│   ├── tb.v                    # General testbench
+│   ├── vmag_tb.v               # VMAG accuracy/error testbench
+│   └── alpha_beta.py           # Python script to optimize VMAG alpha/beta coefficients
 └── README.md
 ```
 
-> Adjust this tree to match your actual repo layout before pushing.
 
 ---
 
@@ -133,15 +149,23 @@ drisc-v/
 
 ### Simulation
 ```bash
-# Example using Icarus Verilog
-iverilog -o sim_out rtl/**/*.v sim/testbenches/pipeline_tb.v
+# Example using Icarus Verilog — pipeline testbench
+iverilog -o sim_out rtl/*.v tb/pipeline_tb.v
 vvp sim_out
+
+# FCAU unit testbench
+iverilog -o fcau_out rtl/fcau.v tb/fcau_tb.v
+vvp fcau_out
+
+# VMAG accuracy testbench
+iverilog -o vmag_out rtl/fcau.v tb/vmag_tb.v
+vvp vmag_out
 ```
 
 ### FPGA Implementation
 1. Open Vivado, create a new project targeting the Basys-3 (`xc7a35tcpg236-1`).
-2. Add all files under `rtl/` as design sources.
-3. Add the constraints file from `fpga/constraints/`.
+2. Add all `.v` files under `rtl/` as design sources.
+3. Add your Basys-3 constraints (`.xdc`) file.
 4. Run Synthesis → Implementation → Generate Bitstream.
 5. Program the board via `Open Hardware Manager`.
 
